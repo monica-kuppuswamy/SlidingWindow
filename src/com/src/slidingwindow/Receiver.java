@@ -26,7 +26,14 @@ class Receiver
 			int port = receivePacket.getPort();
 			
 			if(Math.random() > lossPacketProbability) {
-				System.out.println("RECEIVED SEQUENCE NO: " + rcvPacket.getSequenceNumber());
+				
+				int seqNo;
+				if (rcvPacket.getSequenceNumber() > rcvPacket.getWindowSize() + 1) {
+					seqNo = rcvPacket.getSequenceNumber() % (rcvPacket.getWindowSize() + 1);
+				} else {
+					seqNo = rcvPacket.getSequenceNumber();
+				}
+				System.out.println("RECEIVED SEQUENCE NO: " + seqNo);
 				Acknowledgement ack;
 				if (rcvPacket.getSequenceNumber() == expectedAck) {
 					ack = new Acknowledgement(expectedAck);
@@ -36,11 +43,25 @@ class Receiver
 				}
 				sendData = Data.toBytes(ack);
 				DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
-				System.out.println("ACK SENT: " + ack.getAckNumber());
+				
+				// Print sent acknowledgement number from receiver to sender
+				int ackNo;
+				if (ack.getAckNumber() > rcvPacket.getWindowSize() + 1) {
+					ackNo = ack.getAckNumber() % (rcvPacket.getWindowSize() + 1);
+				} else {
+					ackNo = ack.getAckNumber();
+				}
+				
+				System.out.println("ACK SENT: " + ackNo);
+				System.out.println("\n");
+				
 				serverSocket.send(sendPacket);
 				expectedAck++;
+				
 			} else {
+				
 				System.out.println("***PACKET LOSS***");
+				System.out.println("\n");
 				String response = "Packet Loss";
 				sendData = response.getBytes();
 				DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);

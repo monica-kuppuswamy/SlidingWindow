@@ -54,7 +54,7 @@ class Sender
 		ArrayList<Packet> sentPackets = new ArrayList<Packet>();
 		
 		while (i <= totalNoOfPackets) {
-			try {
+			 try {
 				if (nextSequenceNumber - base < windowSize) {
 					
 					Packet pkt = Data.makePacket(nextSequenceNumber);
@@ -69,15 +69,18 @@ class Sender
 						pkt.setData(errorData.getBytes());
 					}
 					
-					System.out.println("Base: " + base);
-					System.out.println("Next seq: " + nextSequenceNumber);
-					
 					// Converting the packet object to bytes to send it to receiver
 					sendData = Data.toBytes(pkt);
 					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, portNumber);
 					
 					// Printing packet information
-					System.out.println(" PACKET NUMBER: " + i + "SEQ NO: " + pkt.getSequenceNumber());
+					int seqNo;
+					if (i > windowSize + 1) {
+						seqNo = pkt.getSequenceNumber() % (windowSize + 1);
+					} else {
+						seqNo = pkt.getSequenceNumber();
+					}
+					System.out.println("PACKET NUMBER: " + i + " SEQ NO: " + seqNo);
 					
 					// Send it to the receiver socket
 					clientSocket.send(sendPacket);
@@ -91,22 +94,17 @@ class Sender
 					
 					// Increment sequence number
 					nextSequenceNumber++;
-					
-				} else {
-					System.out.println("REFUSING PACKET AS IT EXCEEDS WINDOW SIZE");
+					i++;
 				}
 				
-				i++;
 				
 				// Receiving acknowledgement for the packet
 				DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 				clientSocket.receive(receivePacket);
 				
 				String response = new String(receivePacket.getData());
-				if (response.contains("Packet Loss")) {
-					System.out.println("***PACKET LOSS***");
-				} else {
-					
+				if (!(response.contains("Packet Loss"))) {
+		
 					// Simulating ACK loss with probability 0.05
 					if (Math.random() < lossAckProbability) {
 						System.out.println("***ACK LOSS***");
@@ -122,8 +120,48 @@ class Sender
 						}
 					}
 				}
+				
 			} catch (Exception e) {
-				System.out.println("Time out expired. Resending unacknowledged packets");
+				
+				System.out.println("Timeout. Resending unacknowledged packets from base to (nextseqnum -1)...");
+				for(int j = base ; j < nextSequenceNumber-1; j++) {
+					sendData = Data.toBytes(sentPackets.get(j));
+					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, portNumber);
+					
+					int seqNo;
+					if (sentPackets.get(j).getSequenceNumber() > windowSize + 1) {
+						seqNo = sentPackets.get(j).getSequenceNumber() % (windowSize + 1);
+					} else {
+						seqNo = sentPackets.get(j).getSequenceNumber();
+					}
+					System.out.println("RESENDING PACKET NUMBER: " + j + " SEQ NO: " + seqNo);
+					
+					// Send it to the receiver socket
+					clientSocket.send(sendPacket);
+					
+					// Receiving acknowledgement for the packet
+					DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+					clientSocket.receive(receivePacket);
+					
+					String response = new String(receivePacket.getData());
+					if (!(response.contains("Packet Loss"))) {
+			
+						// Simulating ACK loss with probability 0.05
+						if (Math.random() < lossAckProbability) {
+							System.out.println("***ACK LOSS***");
+						} else {
+							
+							// Converting it and displaying
+							Acknowledgement ack = (Acknowledgement) Data.toObject(receivePacket.getData());
+							System.out.println("RECEIVED ACK: " + ack.getAckNumber());
+							System.out.println("\n");
+							
+							if (ack.getAckNumber() == base) {
+								base = ack.getAckNumber() + 1;
+							}
+						}
+					}
+				}
 			}
 		} 
 		clientSocket.close();
