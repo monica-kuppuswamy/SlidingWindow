@@ -49,26 +49,12 @@ class Sender
 		byte[] receiveData = new byte[1024];
 		
 		int base = 1;
-		int nextSequenceNumber;
+		int nextSequenceNumber = 1;
 		int i = 1;
 		ArrayList<Packet> sentPackets = new ArrayList<Packet>();
 		
-		try {
-			while (i <= totalNoOfPackets) {
-				
-				if (i > (windowSize + 1)) {
-					nextSequenceNumber = (i % (windowSize + 1)) + 1;
-				} else {
-					nextSequenceNumber = i % (windowSize + 1);
-				}
-				
-				/**
-				 * Assuming that here the sequence number starts from 1
-				 */
-				if (nextSequenceNumber == 0) {
-					nextSequenceNumber = windowSize + 1;
-				}
-				
+		while (i <= totalNoOfPackets) {
+			try {
 				if (nextSequenceNumber - base < windowSize) {
 					
 					Packet pkt = Data.makePacket(nextSequenceNumber);
@@ -91,7 +77,7 @@ class Sender
 					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, portNumber);
 					
 					// Printing packet information
-					System.out.println("Seq Number: " + pkt.getSequenceNumber() + " Packet Number" + i);
+					System.out.println(" PACKET NUMBER: " + i + "SEQ NO: " + pkt.getSequenceNumber());
 					
 					// Send it to the receiver socket
 					clientSocket.send(sendPacket);
@@ -121,35 +107,25 @@ class Sender
 					System.out.println("***PACKET LOSS***");
 				} else {
 					
-					// Simulating ACK loss with probability 0.05 (1 in every twenty packet is lost)
+					// Simulating ACK loss with probability 0.05
 					if (Math.random() < lossAckProbability) {
 						System.out.println("***ACK LOSS***");
 					} else {
 						
 						// Converting it and displaying
 						Acknowledgement ack = (Acknowledgement) Data.toObject(receivePacket.getData());
-						System.out.println("Received ACK: " + ack.getAckNumber());
+						System.out.println("RECEIVED ACK: " + ack.getAckNumber());
+						System.out.println("\n");
 						
 						if (ack.getAckNumber() == base) {
 							base = ack.getAckNumber() + 1;
-							
-							if (base > windowSize + 1) {
-								base = 1;
-							}
 						}
-						
-						for(int j = 0; j < ack.getAckNumber() - base; j++) {
-							sentPackets.remove(0);
-						}
-						System.out.println(sentPackets.toString());
 					}
 				}
+			} catch (Exception e) {
+				System.out.println("Time out expired. Resending unacknowledged packets");
 			}
-		} catch (Exception e) {
-			
-			System.out.println("Time out expired. Resending unacknowledged packets");
-			
-		}
+		} 
 		clientSocket.close();
 	}
 }
