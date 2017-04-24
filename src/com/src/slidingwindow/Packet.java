@@ -1,5 +1,10 @@
 package com.src.slidingwindow;
 
+/**
+ * @author Monica Padmanabhan Kuppuswamy
+ * @author Prayas Rode
+ */
+
 import java.io.Serializable;
 
 @SuppressWarnings("serial")

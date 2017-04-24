@@ -1,5 +1,10 @@
 package com.src.slidingwindow;
 
+/**
+ * @author Monica Padmanabhan Kuppuswamy
+ * @author Prayas Rode
+ */
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -63,7 +68,7 @@ public class Data {
 	 * Performs the operation of calculating checksum splitting 16 bit binary data into two segments
 	 * of 8 bit data each and performing ones complement to obtain the checksum.
 	 */
-	public static String calculateCheckSum(String binaryData) {
+	public static String sumData(String binaryData) {
 		int data1 = Integer.parseInt(binaryData.substring(0, 8), 2);
 		int data2 = Integer.parseInt(binaryData.substring(8, 16), 2);
 		int sum = data1 + data2;
@@ -137,7 +142,7 @@ public class Data {
 		
 		// Generate binary data and compute checksum
 		binaryData = Data.getBinaryData();
-		String dataSum = Data.calculateCheckSum(binaryData);
+		String dataSum = Data.sumData(binaryData);
 		binaryChecksum = Data.takeOnesComplement(dataSum);
 		
 		// Create a new packet with a new data, checksum and sequence number
